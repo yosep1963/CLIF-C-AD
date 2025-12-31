@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="CLIF-C AD 점수 계산기 - ACLF가 없는 만성 간경변 환자의 사망 위험 예측">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CLIF-C AD">
+
+    <title>CLIF-C AD 점수 계산기</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+    <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CLIF-C AD 점수 계산기</h1>
+            <p class="warning-text">이 도구는 ACLF가 없는 만성 간경변 환자에게만 적용됩니다</p>
+        </header>
+
+        <main>
+            <form id="calculator-form" novalidate>
+                <div class="input-group">
+                    <label for="age">나이 (세)</label>
+                    <input type="number" id="age" name="age"
+                           inputmode="numeric"
+                           min="18" max="100"
+                           placeholder="18-100"
+                           required>
+                    <span class="error-message" id="age-error"></span>
+                </div>
+
+                <div class="input-group">
+                    <label for="creatinine">크레아티닌 (mg/dL)</label>
+                    <input type="number" id="creatinine" name="creatinine"
+                           inputmode="decimal"
+                           min="0.1" max="10" step="0.1"
+                           placeholder="0.1-10"
+                           required>
+                    <span class="error-message" id="creatinine-error"></span>
+                </div>
+
+                <div class="input-group">
+                    <label for="inr">INR</label>
+                    <input type="number" id="inr" name="inr"
+                           inputmode="decimal"
+                           min="0.1" max="8" step="0.1"
+                           placeholder="0.1-8"
+                           required>
+                    <span class="error-message" id="inr-error"></span>
+                </div>
+
+                <div class="input-group">
+                    <label for="wbc">백혈구 (cells/μL)</label>
+                    <input type="number" id="wbc" name="wbc"
+                           inputmode="numeric"
+                           min="100" max="50000"
+                           placeholder="100-50,000"
+                           required>
+                    <span class="error-message" id="wbc-error"></span>
+                    <span class="hint">예: 15000 입력</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="sodium">나트륨 (mEq/L)</label>
+                    <input type="number" id="sodium" name="sodium"
+                           inputmode="numeric"
+                           min="100" max="160"
+                           placeholder="100-160"
+                           required>
+                    <span class="error-message" id="sodium-error"></span>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">계산하기</button>
+                    <button type="button" id="reset-btn" class="btn btn-secondary">초기화</button>
+                </div>
+            </form>
+
+            <section id="result-section" class="result-section hidden">
+                <h2>결과</h2>
+                <div class="score-display">
+                    <span class="score-label">CLIF-C AD 점수</span>
+                    <span id="score-value" class="score-value">-</span>
+                </div>
+                <div id="risk-badge" class="risk-badge">-</div>
+
+                <table class="mortality-table">
+                    <thead>
+                        <tr>
+                            <th>위험도</th>
+                            <th>90일 사망률</th>
+                            <th>1년 사망률</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="risk-low">
+                            <td>저위험군 (&lt;45)</td>
+                            <td>~5%</td>
+                            <td>~10%</td>
+                        </tr>
+                        <tr class="risk-moderate">
+                            <td>중등도 (45-60)</td>
+                            <td>~10-20%</td>
+                            <td>~25-35%</td>
+                        </tr>
+                        <tr class="risk-high">
+                            <td>고위험군 (&gt;60)</td>
+                            <td>~30-40%</td>
+                            <td>~50-60%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="action-buttons">
+                    <button type="button" id="share-btn" class="btn btn-outline">공유하기</button>
+                    <button type="button" id="history-btn" class="btn btn-outline">기록 보기</button>
+                </div>
+            </section>
+
+            <section id="history-section" class="history-section hidden">
+                <h2>최근 기록</h2>
+                <div id="history-list" class="history-list"></div>
+                <button type="button" id="close-history-btn" class="btn btn-secondary">닫기</button>
+            </section>
+        </main>
+
+        <footer>
+            <p class="footer-note">48-72시간 후 재평가를 권장합니다</p>
+            <p class="footer-note">ACLF 발생 시 CLIF-C ACLF 점수를 사용하세요</p>
+            <p class="disclaimer">본 계산기는 참고용이며, 임상적 판단을 대체하지 않습니다.</p>
+        </footer>
+    </div>
+
+    <script src="src/app.js"></script>
+</body>
+</html>

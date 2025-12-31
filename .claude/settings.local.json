@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__filesystem__list_directory",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(node scripts/build.js:*)",
+      "mcp__filesystem__directory_tree",
+      "Bash(timeout 3:*)",
+      "mcp__puppeteer__puppeteer_navigate",
+      "mcp__puppeteer__puppeteer_screenshot",
+      "mcp__puppeteer__puppeteer_click",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(du:*)",
+      "Bash(cmd //c \"rmdir /s /q \"\"D:\\\\Claude_workplace\\\\CLIF-C AD\\\\dist\"\"\")",
+      "Bash(powershell -Command \"Remove-Item -Path ''D:\\\\Claude_workplace\\\\CLIF-C AD\\\\dist'' -Recurse -Force\")",
+      "mcp__filesystem__read_multiple_files",
+      "mcp__github__push_files",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

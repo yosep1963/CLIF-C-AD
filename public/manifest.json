@@ -1,0 +1,33 @@
+{
+    "name": "CLIF-C AD 점수 계산기",
+    "short_name": "CLIF-C AD",
+    "description": "ACLF가 없는 만성 간경변 환자의 사망 위험 예측 도구",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2563eb",
+    "orientation": "portrait",
+    "scope": "/",
+    "lang": "ko",
+    "icons": [
+        {
+            "src": "icons/icon-192.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-192.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ],
+    "categories": ["medical", "health"]
+}

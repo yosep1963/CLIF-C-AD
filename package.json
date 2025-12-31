@@ -1,0 +1,19 @@
+{
+  "name": "clif-c-ad-calculator",
+  "version": "1.0.0",
+  "description": "CLIF-C AD Score Calculator PWA - ACLF가 없는 만성 간경변 환자의 사망 위험 예측 도구",
+  "main": "public/index.html",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "serve": "npx serve public -p 3000"
+  },
+  "keywords": [
+    "clif-c",
+    "liver",
+    "cirrhosis",
+    "calculator",
+    "pwa"
+  ],
+  "author": "",
+  "license": "MIT"
+}
