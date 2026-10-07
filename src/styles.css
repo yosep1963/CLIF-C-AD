@@ -142,6 +142,7 @@ header h1 {
     cursor: pointer;
     transition: all 0.2s;
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-primary {
@@ -239,30 +240,93 @@ header h1 {
     color: #991b1b;
 }
 
-/* Mortality Table */
-.mortality-table {
+/* ACLF 기준 충족 - CLIF-C AD 적용 대상 아님 */
+.risk-na {
+    background-color: var(--color-gray-200);
+    color: var(--color-gray-700);
+}
+
+/* ACLF 기준 안내 */
+.aclf-alert {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    margin-bottom: 16px;
+}
+
+.aclf-alert-aclf {
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+}
+
+.aclf-alert-caution {
+    background-color: #fef3c7;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+}
+
+/* 예측 사망률 */
+.mortality-block {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.mortality-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 12px 8px;
+    background-color: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--border-radius);
+}
+
+.mortality-label {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.mortality-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+/* Risk Table */
+.risk-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     font-size: 0.875rem;
 }
 
-.mortality-table th,
-.mortality-table td {
+.risk-table th,
+.risk-table td {
     padding: 10px 8px;
     text-align: center;
     border-bottom: 1px solid var(--color-gray-200);
 }
 
-.mortality-table th {
+.risk-table th {
     background-color: var(--color-gray-100);
     font-weight: 600;
     color: var(--color-gray-700);
 }
 
-.mortality-table tbody tr.current-risk {
-    background-color: rgba(37, 99, 235, 0.1);
-    font-weight: 600;
+.risk-table tbody tr.current-risk {
+    font-weight: 700;
+    box-shadow: inset 4px 0 0 currentColor;
+}
+
+.table-note {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    margin-bottom: 16px;
 }
 
 .action-buttons {
@@ -302,10 +366,18 @@ header h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     padding: 12px;
     background-color: white;
     border-radius: var(--border-radius);
     border: 1px solid var(--color-gray-200);
+}
+
+.history-item-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 8px;
 }
 
 .history-item-score {
@@ -318,10 +390,40 @@ header h1 {
     color: var(--color-gray-500);
 }
 
+.history-item-detail {
+    flex-basis: 100%;
+    font-size: 0.75rem;
+    color: var(--color-gray-700);
+}
+
+.history-item-tags {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
 .history-item-risk {
     font-size: 0.75rem;
     padding: 4px 8px;
     border-radius: 999px;
+    white-space: nowrap;
+}
+
+.history-changed {
+    font-size: 0.6875rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    white-space: nowrap;
+}
+
+.history-note {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    margin-bottom: 16px;
 }
 
 .no-history {
@@ -344,15 +446,70 @@ footer {
     margin-bottom: 8px;
 }
 
-.disclaimer {
+.footer-version {
     font-size: 0.75rem;
     color: var(--color-gray-500);
     margin-top: 12px;
 }
 
+.disclaimer {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    margin-top: 4px;
+}
+
 /* Utility Classes */
 .hidden {
     display: none !important;
+}
+
+/* Install Banner */
+.install-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: white;
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+.install-banner p {
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.install-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.install-banner button {
+    background: white;
+    color: var(--color-primary);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-left: 12px;
+}
+
+.install-banner .close-btn {
+    background: transparent;
+    color: white;
+    padding: 8px;
+    margin-left: 8px;
+    font-size: 1.25rem;
+    line-height: 1;
 }
 
 /* Responsive */

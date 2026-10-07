@@ -1,0 +1,9 @@
+# Netlify 응답 헤더 (dist/에 복사되어 폴더 업로드와 Git 배포 모두 적용)
+# 파일 이름에 해시가 없으므로 오래 캐시하지 않음 (Netlify 기본값으로 매번 확인, 스크립트·스타일은 ?v=빌드ID로 갱신)
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/manifest.json
+  Content-Type: application/manifest+json

@@ -1,5 +1,4 @@
-// CLIF-C AD Score Calculator
-// Formula: CLIF-C AD = 10 × [0.03 × Age + 0.66 × ln(Creatinine) + 1.71 × ln(INR) + 0.88 × ln(WBC/1000) - 0.05 × Sodium + 8]
+// CLIF-C AD Score Calculator - 화면 처리 (계산 로직은 calculator.js의 ClifCAd)
 
 (function() {
     'use strict';
@@ -7,15 +6,7 @@
     // Constants
     const STORAGE_KEY = 'clif-c-ad-history';
     const MAX_HISTORY = 5;
-
-    // Validation ranges
-    const VALIDATION = {
-        age: { min: 18, max: 100, message: '나이는 18-100세 사이여야 합니다' },
-        creatinine: { min: 0.1, max: 10, message: '크레아티닌은 0.1-10 사이여야 합니다' },
-        inr: { min: 0.1, max: 8, message: 'INR은 0.1-8 사이여야 합니다' },
-        wbc: { min: 100, max: 50000, message: '백혈구는 100-50,000 사이여야 합니다' },
-        sodium: { min: 100, max: 160, message: '나트륨은 100-160 사이여야 합니다' }
-    };
+    const INSTALL_PROMPT_KEY = 'clif-c-ad-install-dismissed';
 
     // DOM Elements
     const form = document.getElementById('calculator-form');
@@ -23,12 +14,22 @@
     const historySection = document.getElementById('history-section');
     const scoreValue = document.getElementById('score-value');
     const riskBadge = document.getElementById('risk-badge');
+    const aclfAlert = document.getElementById('aclf-alert');
+    const prognosisBlock = document.getElementById('prognosis-block');
+    const mortality90 = document.getElementById('mortality-90');
+    const mortality365 = document.getElementById('mortality-365');
     const historyList = document.getElementById('history-list');
+    const historyNote = document.getElementById('history-note');
 
     const resetBtn = document.getElementById('reset-btn');
     const shareBtn = document.getElementById('share-btn');
     const historyBtn = document.getElementById('history-btn');
     const closeHistoryBtn = document.getElementById('close-history-btn');
+
+    const installBanner = document.getElementById('install-banner');
+    const installMessage = document.getElementById('install-message');
+    const installBtn = document.getElementById('install-btn');
+    const closeInstallBtn = document.getElementById('close-install-btn');
 
     const inputs = {
         age: document.getElementById('age'),
@@ -38,26 +39,29 @@
         sodium: document.getElementById('sodium')
     };
 
+    // 마지막 계산 (공유하기에 사용)
+    let lastResult = null;
+    let lastValues = null;
+
+    // PWA Install prompt (안드로이드 Chrome)
+    let deferredPrompt = null;
+
     // Initialize
     function init() {
         setupEventListeners();
         setupServiceWorker();
+        setupInstallPrompt();
     }
 
     // Event Listeners
     function setupEventListeners() {
-        // Form submission
         form.addEventListener('submit', handleSubmit);
-
-        // Reset button
         resetBtn.addEventListener('click', handleReset);
-
-        // Share button
         shareBtn.addEventListener('click', handleShare);
-
-        // History buttons
         historyBtn.addEventListener('click', showHistory);
         closeHistoryBtn.addEventListener('click', hideHistory);
+        installBtn.addEventListener('click', handleInstall);
+        closeInstallBtn.addEventListener('click', dismissInstallBanner);
 
         // Real-time validation
         Object.keys(inputs).forEach(key => {
@@ -82,140 +86,84 @@
     }
 
     // Validation
-    function validateField(fieldName) {
-        const input = inputs[fieldName];
-        const value = parseFloat(input.value);
-        const validation = VALIDATION[fieldName];
-        const errorElement = document.getElementById(`${fieldName}-error`);
-
-        if (input.value === '') {
-            input.classList.remove('valid', 'invalid');
-            errorElement.textContent = '';
-            return false;
-        }
-
-        if (isNaN(value) || value < validation.min || value > validation.max) {
-            input.classList.remove('valid');
-            input.classList.add('invalid');
-            errorElement.textContent = validation.message;
-            return false;
-        }
-
-        input.classList.remove('invalid');
-        input.classList.add('valid');
-        errorElement.textContent = '';
-        return true;
+    function showFieldState(key, error) {
+        inputs[key].classList.toggle('invalid', Boolean(error));
+        inputs[key].classList.toggle('valid', !error);
+        document.getElementById(`${key}-error`).textContent = error || '';
     }
 
-    function validateAll() {
-        let isValid = true;
+    function clearFieldState(key) {
+        inputs[key].classList.remove('valid', 'invalid');
+        document.getElementById(`${key}-error`).textContent = '';
+    }
+
+    // 입력 중에는 빈칸을 오류로 표시하지 않음 (계산하기를 누르면 표시)
+    function validateField(key) {
+        if (inputs[key].value.trim() === '') {
+            clearFieldState(key);
+            return;
+        }
+        showFieldState(key, ClifCAd.validateValue(key, inputs[key].value).error);
+    }
+
+    function readInputs() {
+        const raw = {};
         Object.keys(inputs).forEach(key => {
-            if (!validateField(key)) {
-                isValid = false;
-            }
+            raw[key] = inputs[key].value;
         });
-        return isValid;
-    }
-
-    // Calculate CLIF-C AD Score
-    function calculateScore(age, creatinine, inr, wbc, sodium) {
-        // WBC is entered as cells/μL, convert to 10^9/L by dividing by 1000
-        const wbcConverted = wbc / 1000;
-
-        // Ensure values for ln() are positive
-        const safeCreatinine = Math.max(creatinine, 0.01);
-        const safeInr = Math.max(inr, 0.01);
-        const safeWbc = Math.max(wbcConverted, 0.01);
-
-        const score = 10 * (
-            0.03 * age +
-            0.66 * Math.log(safeCreatinine) +
-            1.71 * Math.log(safeInr) +
-            0.88 * Math.log(safeWbc) -
-            0.05 * sodium +
-            8
-        );
-
-        return Math.round(score * 10) / 10; // Round to 1 decimal place
-    }
-
-    // Get risk category
-    function getRiskCategory(score) {
-        if (score < 45) {
-            return {
-                level: 'low',
-                text: '저위험군',
-                className: 'risk-low'
-            };
-        } else if (score <= 60) {
-            return {
-                level: 'moderate',
-                text: '중등도 위험군',
-                className: 'risk-moderate'
-            };
-        } else {
-            return {
-                level: 'high',
-                text: '고위험군',
-                className: 'risk-high'
-            };
-        }
+        return raw;
     }
 
     // Handle form submission
     function handleSubmit(e) {
         e.preventDefault();
 
-        if (!validateAll()) {
+        const { isValid, values, errors } = ClifCAd.validateInputs(readInputs());
+        Object.keys(inputs).forEach(key => showFieldState(key, errors[key]));
+
+        if (!isValid) {
+            inputs[Object.keys(errors)[0]].focus();
             return;
         }
 
-        const values = {
-            age: parseFloat(inputs.age.value),
-            creatinine: parseFloat(inputs.creatinine.value),
-            inr: parseFloat(inputs.inr.value),
-            wbc: parseFloat(inputs.wbc.value),
-            sodium: parseFloat(inputs.sodium.value)
-        };
+        const result = ClifCAd.calculate(values);
+        lastResult = result;
+        lastValues = values;
 
-        const score = calculateScore(
-            values.age,
-            values.creatinine,
-            values.inr,
-            values.wbc,
-            values.sodium
-        );
+        displayResult(result);
+        saveToHistory(result, values);
 
-        const risk = getRiskCategory(score);
-
-        // Display results
-        displayResult(score, risk);
-
-        // Save to history
-        saveToHistory(score, risk, values);
-
-        // Scroll to result
         resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    function getRiskClass(result) {
+        return result.applicable ? `risk-${result.riskGroup}` : 'risk-na';
+    }
+
     // Display result
-    function displayResult(score, risk) {
-        scoreValue.textContent = score.toFixed(1);
-        scoreValue.className = 'score-value ' + risk.className;
+    function displayResult(result) {
+        const riskClass = getRiskClass(result);
 
-        riskBadge.textContent = risk.text;
-        riskBadge.className = 'risk-badge ' + risk.className;
+        scoreValue.textContent = result.score.toFixed(1);
+        scoreValue.className = `score-value ${riskClass}`;
+        riskBadge.textContent = ClifCAd.getRiskLabel(result);
+        riskBadge.className = `risk-badge ${riskClass}`;
 
-        // Highlight current risk row in table
-        const rows = document.querySelectorAll('.mortality-table tbody tr');
-        rows.forEach(row => row.classList.remove('current-risk'));
+        // 입력값이 ACLF 기준에 해당하면 안내
+        aclfAlert.textContent = result.aclf ? result.aclf.message : '';
+        aclfAlert.className = result.aclf ? `aclf-alert aclf-alert-${result.aclf.level}` : 'aclf-alert hidden';
 
-        const riskRowMap = {
-            'low': 0,
-            'moderate': 1,
-            'high': 2
-        };
-        rows[riskRowMap[risk.level]].classList.add('current-risk');
+        // ACLF 기준을 충족하면 예측 사망률과 위험군 표를 보여주지 않음
+        prognosisBlock.classList.toggle('hidden', !result.applicable);
+        if (result.applicable) {
+            mortality90.textContent = `${result.mortality.day90}%`;
+            mortality365.textContent = `${result.mortality.day365}%`;
+
+            // Highlight current risk row in table
+            document.querySelectorAll('.risk-table tbody tr').forEach(row => {
+                row.classList.toggle('current-risk', row.dataset.risk === result.riskGroup);
+            });
+        }
 
         resultSection.classList.remove('hidden');
     }
@@ -223,22 +171,20 @@
     // Handle reset
     function handleReset() {
         form.reset();
-        Object.keys(inputs).forEach(key => {
-            inputs[key].classList.remove('valid', 'invalid');
-            document.getElementById(`${key}-error`).textContent = '';
-        });
+        Object.keys(inputs).forEach(clearFieldState);
+        lastResult = null;
+        lastValues = null;
         resultSection.classList.add('hidden');
         historySection.classList.add('hidden');
     }
 
     // Handle share
     async function handleShare() {
-        const score = scoreValue.textContent;
-        const risk = riskBadge.textContent;
+        if (!lastResult) return;
 
         const shareData = {
             title: 'CLIF-C AD 점수',
-            text: `CLIF-C AD 점수: ${score}\n위험도: ${risk}`,
+            text: ClifCAd.formatShareText(lastResult, lastValues),
             url: window.location.href
         };
 
@@ -272,28 +218,25 @@
     function getHistory() {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
-            return data ? JSON.parse(data) : [];
+            const history = data ? JSON.parse(data) : [];
+            return Array.isArray(history) ? history : [];
         } catch {
             return [];
         }
     }
 
-    function saveToHistory(score, risk, values) {
+    function saveToHistory(result, values) {
         const history = getHistory();
-        const entry = {
-            score,
-            risk: risk.level,
-            riskText: risk.text,
+        history.unshift({
+            score: result.score,
+            risk: ClifCAd.getRiskKey(result),
+            riskText: ClifCAd.getRiskLabel(result),
             values,
             timestamp: new Date().toISOString()
-        };
-
-        history.unshift(entry);
+        });
 
         // Keep only last MAX_HISTORY entries
-        if (history.length > MAX_HISTORY) {
-            history.pop();
-        }
+        history.splice(MAX_HISTORY);
 
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
@@ -302,34 +245,43 @@
         }
     }
 
-    function showHistory() {
-        const history = getHistory();
+    function renderHistoryItem(record) {
+        const dateStr = new Date(record.timestamp).toLocaleDateString('ko-KR', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        const detail = record.mortality
+            ? `90일 ${record.mortality.day90}% · 1년 ${record.mortality.day365}%`
+            : 'ACLF 기준 충족';
+        const changed = record.isChanged ? '<span class="history-changed">기준 변경</span>' : '';
 
-        if (history.length === 0) {
+        return `
+            <div class="history-item">
+                <div class="history-item-main">
+                    <span class="history-item-score">${record.score.toFixed(1)}</span>
+                    <span class="history-item-date">${dateStr}</span>
+                    <span class="history-item-detail">${detail}</span>
+                </div>
+                <div class="history-item-tags">
+                    <span class="history-item-risk ${getRiskClass(record)}">${ClifCAd.getRiskLabel(record)}</span>
+                    ${changed}
+                </div>
+            </div>
+        `;
+    }
+
+    function showHistory() {
+        // 저장된 기록은 그대로 두고, 현재 기준으로 다시 계산해서 보여줌
+        const records = getHistory().map(record => ClifCAd.recalculate(record)).filter(Boolean);
+
+        if (records.length === 0) {
             historyList.innerHTML = '<p class="no-history">저장된 기록이 없습니다</p>';
         } else {
-            historyList.innerHTML = history.map(entry => {
-                const date = new Date(entry.timestamp);
-                const dateStr = date.toLocaleDateString('ko-KR', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                const riskClass = `risk-${entry.risk}`;
-
-                return `
-                    <div class="history-item">
-                        <div>
-                            <span class="history-item-score">${entry.score.toFixed(1)}</span>
-                            <span class="history-item-date">${dateStr}</span>
-                        </div>
-                        <span class="history-item-risk ${riskClass}">${entry.riskText}</span>
-                    </div>
-                `;
-            }).join('');
+            historyList.innerHTML = records.map(renderHistoryItem).join('');
         }
+        historyNote.classList.toggle('hidden', !records.some(record => record.isChanged));
 
         historySection.classList.remove('hidden');
         historySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -337,6 +289,75 @@
 
     function hideHistory() {
         historySection.classList.add('hidden');
+    }
+
+    // PWA Install Prompt
+    function setupInstallPrompt() {
+        // For Android Chrome - beforeinstallprompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallBanner(false);
+        });
+
+        // Check if already installed
+        window.addEventListener('appinstalled', () => {
+            hideInstallBanner();
+            deferredPrompt = null;
+        });
+
+        // For iOS Safari - show manual instructions (iPadOS는 Mac으로 표시되므로 터치 지원으로 구분)
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true;
+
+        if (isIOS && !isInStandaloneMode) {
+            setTimeout(() => showInstallBanner(true), 2000);
+        }
+    }
+
+    function isInstallDismissed() {
+        try {
+            return localStorage.getItem(INSTALL_PROMPT_KEY) === 'true';
+        } catch {
+            return false;
+        }
+    }
+
+    function showInstallBanner(isIOS) {
+        if (isInstallDismissed()) return;
+
+        if (isIOS) {
+            installMessage.textContent = '홈 화면에 추가: Safari의 공유 버튼 → "홈 화면에 추가"';
+            installBtn.classList.add('hidden');
+        }
+        installBanner.classList.remove('hidden');
+    }
+
+    function hideInstallBanner() {
+        installBanner.classList.add('hidden');
+    }
+
+    function dismissInstallBanner() {
+        hideInstallBanner();
+        try {
+            localStorage.setItem(INSTALL_PROMPT_KEY, 'true');
+        } catch {
+            // 저장하지 못해도 이번에는 닫힘
+        }
+    }
+
+    async function handleInstall() {
+        if (!deferredPrompt) return;
+
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+
+        if (outcome === 'accepted') {
+            hideInstallBanner();
+        }
+        deferredPrompt = null;
     }
 
     // Initialize app

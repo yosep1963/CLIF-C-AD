@@ -1,33 +1,41 @@
 {
+    "id": "/",
     "name": "CLIF-C AD 점수 계산기",
     "short_name": "CLIF-C AD",
-    "description": "ACLF가 없는 만성 간경변 환자의 사망 위험 예측 도구",
+    "description": "ACLF가 없는 급성 비대상성 간경변 환자의 사망 위험 예측 도구",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
+    "orientation": "portrait",
     "background_color": "#ffffff",
     "theme_color": "#2563eb",
-    "orientation": "portrait",
-    "scope": "/",
     "lang": "ko",
+    "dir": "ltr",
+    "categories": ["medical", "health"],
     "icons": [
         {
-            "src": "icons/icon-192.svg",
+            "src": "icons/icon-192.png",
             "sizes": "192x192",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "icons/icon-512.svg",
+            "src": "icons/icon-512.png",
             "sizes": "512x512",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "icons/icon-192.svg",
-            "sizes": "any",
-            "type": "image/svg+xml",
+            "src": "icons/icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
             "purpose": "maskable"
         }
-    ],
-    "categories": ["medical", "health"]
+    ]
 }

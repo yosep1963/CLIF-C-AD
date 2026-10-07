@@ -2,25 +2,30 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="CLIF-C AD 점수 계산기 - ACLF가 없는 만성 간경변 환자의 사망 위험 예측">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CLIF-C AD 점수 계산기 - ACLF가 없는 급성 비대상성 간경변 환자의 사망 위험 예측">
     <meta name="theme-color" content="#2563eb">
+
+    <!-- PWA (홈 화면 설치) -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="CLIF-C AD">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
 
     <title>CLIF-C AD 점수 계산기</title>
 
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
-    <link rel="apple-touch-icon" href="icons/icon-192.svg">
-    <link rel="stylesheet" href="src/styles.css">
+    <!-- ?v= 값은 scripts/build.js가 빌드 ID로 채움 (service-worker.js의 사전 캐시 주소와 같아야 함) -->
+    <link rel="stylesheet" href="src/styles.css?v=__BUILD_ID__">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>CLIF-C AD 점수 계산기</h1>
-            <p class="warning-text">이 도구는 ACLF가 없는 만성 간경변 환자에게만 적용됩니다</p>
+            <p class="warning-text">급성 비대상성 간경변으로 입원한 환자 중 <strong>ACLF가 없는 환자</strong>에게만 적용합니다. ACLF 여부는 먼저 CLIF-C OF로 확인하세요.</p>
         </header>
 
         <main>
@@ -39,7 +44,7 @@
                     <label for="creatinine">크레아티닌 (mg/dL)</label>
                     <input type="number" id="creatinine" name="creatinine"
                            inputmode="decimal"
-                           min="0.1" max="10" step="0.1"
+                           min="0.1" max="10" step="0.01"
                            placeholder="0.1-10"
                            required>
                     <span class="error-message" id="creatinine-error"></span>
@@ -49,7 +54,7 @@
                     <label for="inr">INR</label>
                     <input type="number" id="inr" name="inr"
                            inputmode="decimal"
-                           min="0.1" max="8" step="0.1"
+                           min="0.1" max="8" step="0.01"
                            placeholder="0.1-8"
                            required>
                     <span class="error-message" id="inr-error"></span>
@@ -90,32 +95,45 @@
                 </div>
                 <div id="risk-badge" class="risk-badge">-</div>
 
-                <table class="mortality-table">
-                    <thead>
-                        <tr>
-                            <th>위험도</th>
-                            <th>90일 사망률</th>
-                            <th>1년 사망률</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="risk-low">
-                            <td>저위험군 (&lt;45)</td>
-                            <td>~5%</td>
-                            <td>~10%</td>
-                        </tr>
-                        <tr class="risk-moderate">
-                            <td>중등도 (45-60)</td>
-                            <td>~10-20%</td>
-                            <td>~25-35%</td>
-                        </tr>
-                        <tr class="risk-high">
-                            <td>고위험군 (&gt;60)</td>
-                            <td>~30-40%</td>
-                            <td>~50-60%</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <p id="aclf-alert" class="aclf-alert hidden" role="alert"></p>
+
+                <!-- 예후 (입력값이 ACLF 기준을 충족하면 숨김) -->
+                <div id="prognosis-block">
+                    <div class="mortality-block">
+                        <div class="mortality-item">
+                            <span class="mortality-label">90일 예측 사망률</span>
+                            <span id="mortality-90" class="mortality-value">-</span>
+                        </div>
+                        <div class="mortality-item">
+                            <span class="mortality-label">1년 예측 사망률</span>
+                            <span id="mortality-365" class="mortality-value">-</span>
+                        </div>
+                    </div>
+
+                    <table class="risk-table">
+                        <thead>
+                            <tr>
+                                <th>위험군</th>
+                                <th>CLIF-C AD 점수</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="risk-low" data-risk="low">
+                                <td>저위험군</td>
+                                <td>45 이하</td>
+                            </tr>
+                            <tr class="risk-moderate" data-risk="moderate">
+                                <td>중등도 위험군</td>
+                                <td>45 초과 ~ 60 미만</td>
+                            </tr>
+                            <tr class="risk-high" data-risk="high">
+                                <td>고위험군</td>
+                                <td>60 이상</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="table-note">예측 사망률은 EF CLIF 공식 계산기와 같은 계산식으로 구합니다. 원저(Jalan 2015)에서 관찰한 3개월 사망률은 저위험군 1.8%, 고위험군 31.3%입니다.</p>
+                </div>
 
                 <div class="action-buttons">
                     <button type="button" id="share-btn" class="btn btn-outline">공유하기</button>
@@ -126,17 +144,29 @@
             <section id="history-section" class="history-section hidden">
                 <h2>최근 기록</h2>
                 <div id="history-list" class="history-list"></div>
+                <p id="history-note" class="history-note hidden">‘기준 변경’은 저장할 때와 현재 기준(위험군 경계 45·60점, ACLF 기준 확인)으로 다시 계산한 결과가 다른 기록입니다. 저장된 값은 그대로 두고 현재 기준으로 보여줍니다.</p>
                 <button type="button" id="close-history-btn" class="btn btn-secondary">닫기</button>
             </section>
         </main>
 
         <footer>
-            <p class="footer-note">48-72시간 후 재평가를 권장합니다</p>
-            <p class="footer-note">ACLF 발생 시 CLIF-C ACLF 점수를 사용하세요</p>
+            <p class="footer-note">48–72시간 후 재평가를 권장합니다 (입원 중 반복 계산하면 예측력이 더 좋아집니다)</p>
+            <p class="footer-note">ACLF가 생기면 CLIF-C ACLF 점수를 사용하세요</p>
+            <p class="footer-version">CLIF-C AD Calculator v__APP_VERSION__ · 기준: Jalan 2015, CANONIC, EASL CPG 2023</p>
             <p class="disclaimer">본 계산기는 참고용이며, 임상적 판단을 대체하지 않습니다.</p>
         </footer>
     </div>
 
-    <script src="src/app.js"></script>
+    <!-- 홈 화면 설치 안내 (안드로이드 Chrome: 설치 버튼, iOS Safari: 방법 안내) -->
+    <div id="install-banner" class="install-banner hidden">
+        <p id="install-message">홈 화면에 추가하여 앱처럼 사용하세요</p>
+        <div class="install-actions">
+            <button type="button" id="install-btn">설치</button>
+            <button type="button" id="close-install-btn" class="close-btn" aria-label="닫기">&times;</button>
+        </div>
+    </div>
+
+    <script src="src/calculator.js?v=__BUILD_ID__"></script>
+    <script src="src/app.js?v=__BUILD_ID__"></script>
 </body>
 </html>

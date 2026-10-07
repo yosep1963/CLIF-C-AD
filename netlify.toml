@@ -1,30 +1,10 @@
+# Netlify 배포 설정 - CLIF-C AD Score Calculator PWA
+# 폴더 업로드 배포: npm run build 후 dist/ 폴더를 올림 (이 파일은 쓰이지 않음)
+# Git 연동 배포: 아래 설정으로 빌드
+
 [build]
-  publish = "public"
   command = "node scripts/build.js"
+  publish = "dist"
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-
-[[headers]]
-  for = "/service-worker.js"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# 응답 헤더와 리다이렉트는 public/_headers, public/_redirects에 있음
+# (dist/에 복사되므로 폴더 업로드 배포에도 적용됨)

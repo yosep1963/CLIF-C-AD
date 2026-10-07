@@ -1,0 +1,3 @@
+.DS_Store
+# 배포 폴더는 npm run build로 만듦
+dist/
